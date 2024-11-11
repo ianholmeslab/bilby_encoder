@@ -1,14 +1,56 @@
-import pytest
+import os
+import numpy as np
+
+import warnings
+warnings.filterwarnings('ignore')
+
 from src.encoder import Encoder
 
 class TestEncoder():
 
-    x = 17
+    def test_basictest(self):
 
-    def test_tautology(self):
-        assert self.x == 17
-        assert str(self.x) != "test_string"
+        data_path = os.path.abspath('./testing/testdata/basictest/')
 
-    def test_encoder_accession(self):
-        assert self.x % 5 != 0
-        assert Encoder.pytest_test_method()
+        bed_files = [os.path.join(data_path, 'windows0.bed')]
+        fasta_file = os.path.join(data_path, 'genome.fasta')
+        bam_files = [os.path.join(data_path, 'sorted_alignment0.bam')]
+
+        # TODO: is there a better way to encode the matrices?
+        transition_matrix_1 = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 3, 3, 4, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 5, 5, 5, 5, 4, 4, 4, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ])
+
+        transition_matrix_2 = np.array([
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [3, 5, 5, 5, 3, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 2, 3, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 2, 4, 4, 4, 3],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ])
+
+        correct_transition_matrices = [transition_matrix_1, transition_matrix_2]
+
+        encoder = Encoder(bed_files, fasta_file, bam_files)
+        encoder.encode()
+
+        for i, matrix in enumerate(encoder.transition_matrices):
+            assert np.array_equal(matrix, correct_transition_matrices[i])
