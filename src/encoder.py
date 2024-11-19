@@ -5,6 +5,7 @@ reads within a specified BED window.
 """
 # pylint: disable=fixme, disable=no-member
 
+import argparse
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
@@ -12,6 +13,7 @@ from sklearn.preprocessing import OneHotEncoder
 from Bio import SeqIO
 import pyranges as pr
 import pysam
+
 
 class Encoder:
     """
@@ -33,21 +35,23 @@ class Encoder:
         List of one-hot encoded matrices for sequences.
     transition_matrices : list of np.ndarray
         List of transition matrices for read alignments.
+    output_dir : str
+        Directory to save output files.
     """
 
     transition_states = [('S','M'), ('M','M'), ('M','E'), ('M','N'), ('N','M'), ('N','N')]
     transition_dict = {transition: i for i, transition in enumerate(transition_states)}
 
-    def __init__(self, bed_files: list[str], fasta_file: str, bam_files: list[str]):
-
-        # TODO: throw error if all of these files not specified?
+    def __init__(self, bed_files: list[str], fasta_file: str, bam_files: list[str], output_dir: str = '.'):
         self.bed_files = bed_files
-        self.fasta_file = fasta_file    # TODO: support multiple fasta files?
-        self.bam_files = bam_files      # TODO: support for SAM/CRAM files?
+        self.fasta_file = fasta_file
+        self.bam_files = bam_files
+        self.output_dir = output_dir
 
-        self.bed_windows = None         # TODO: do we care about strandedness of BED windows?
-        self.onehot_sequence_matrices = None   # TODO: convert to numpy array?
-        self.transition_matrices = None # TODO: convert to numpy array?
+        self.bed_windows = None
+        self.onehot_sequence_matrices = None
+        self.transition_matrices = None
+
 
     def extract_bed_windows(self):
         """
@@ -238,19 +242,75 @@ class Encoder:
         self.extract_sequence_onehot()
         self.extract_transition_matrices()
 
+    def save_matrices(self):
+        """
+        Save one-hot sequence and transition matrices to files in the output directory.
+        """
+        import os
+        
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+        for i, (seq_matrix, trans_matrix) in enumerate(zip(self.onehot_sequence_matrices, self.transition_matrices)):
+            # Save one-hot sequence matrix
+            seq_filename = os.path.join(self.output_dir, f'onehot_sequence_matrix_{i}.npy')
+            np.save(seq_filename, seq_matrix)
+            
+            # Save transition matrix
+            trans_filename = os.path.join(self.output_dir, f'transition_matrix_{i}.npy')
+            np.save(trans_filename, trans_matrix)
+            
+            print(f"Saved matrices for window {i}:")
+            print(f"  Sequence matrix: {seq_filename}")
+            print(f"  Transition matrix: {trans_filename}")
+
 def main():
-    """Access class and call driver member function to begin programatic cascade."""
-
-    bed_files = []
-    fasta_file = ''
-    bam_files = []
-
-    encoder = Encoder(bed_files, fasta_file, bam_files)
+    """Parse command-line arguments and run encoding process."""
+    parser = argparse.ArgumentParser(description='One-hot encode genomic sequences and RNA-seq reads.')
+    
+    parser.add_argument('-b', '--bed', 
+                        nargs='+', 
+                        required=True, 
+                        help='Path to one or more BED files')
+    
+    parser.add_argument('-f', '--fasta', 
+                        required=True, 
+                        help='Path to FASTA file containing genomic sequences')
+    
+    parser.add_argument('-a', '--bam', 
+                        nargs='+', 
+                        required=True, 
+                        help='Path to one or more BAM files')
+    
+    parser.add_argument('-o', '--output', 
+                        default='.', 
+                        help='Output directory for saving matrices (default: current directory)')
+    
+    parser.add_argument('-p', '--print', 
+                        action='store_true', 
+                        help='Print matrices to console in addition to saving')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # Create Encoder instance
+    encoder = Encoder(
+        bed_files=args.bed, 
+        fasta_file=args.fasta, 
+        bam_files=args.bam,
+        output_dir=args.output
+    )
+    
+    # Run encoding process
     encoder.encode()
-
-    for i, matrices in enumerate(zip(encoder.onehot_sequence_matrices, encoder.transition_matrices)):
-        print(f'\nOne-Hot Sequence Matrix {i}:\n{matrices[0]}\n')
-        print(f'\nTransition Matrix {i}:\n{matrices[1]}\n')
+    
+    # Save matrices
+    encoder.save_matrices()
+    
+    # Optionally print matrices to console
+    if args.print:
+        for i, matrices in enumerate(zip(encoder.onehot_sequence_matrices, encoder.transition_matrices)):
+            print(f'\nOne-Hot Sequence Matrix {i}:\n{matrices[0]}\n')
+            print(f'\nTransition Matrix {i}:\n{matrices[1]}\n')
 
 if __name__ == '__main__':
     main()
