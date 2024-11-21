@@ -6,6 +6,8 @@ reads within a specified BED window.
 # pylint: disable=fixme, disable=no-member
 
 import argparse
+import os
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
@@ -246,7 +248,6 @@ class Encoder:
         """
         Save one-hot sequence and transition matrices to files in the output directory.
         """
-        import os
         
         os.makedirs(self.output_dir, exist_ok=True)
         
