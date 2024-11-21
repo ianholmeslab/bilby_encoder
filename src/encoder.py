@@ -6,6 +6,8 @@ reads within a specified BED window.
 # pylint: disable=fixme, disable=no-member
 
 import argparse
+import os
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
@@ -49,13 +51,7 @@ class Encoder:
     ]
     transition_dict = {transition: i for i, transition in enumerate(transition_states)}
 
-    def __init__(
-        self,
-        bed_files: list[str],
-        fasta_file: str,
-        bam_files: list[str],
-        output_dir: str = ".",
-    ):
+    def __init__(self, bed_files: list[str], fasta_file: str, bam_files: list[str], output_dir: str = '.'):
         self.bed_files = bed_files
         self.fasta_file = fasta_file
         self.bam_files = bam_files
@@ -282,7 +278,6 @@ class Encoder:
         """
         Save one-hot sequence and transition matrices to files in the output directory.
         """
-        import os
 
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -407,7 +402,6 @@ def main():
         ):
             print(f"\nOne-Hot Sequence Matrix {i}:\n{matrices[0]}\n")
             print(f"\nTransition Matrix {i}:\n{matrices[1]}\n")
-
 
 if __name__ == "__main__":
     main()
