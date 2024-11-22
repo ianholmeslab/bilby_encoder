@@ -2,7 +2,6 @@
 # pylint: disable=fixme, disable=no-member
 
 import os
-import re
 from itertools import groupby
 
 import pandas as pd
@@ -11,8 +10,7 @@ import numpy as np
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio import pairwise2
-#from Bio.pairwise2 import format_alignment
+from Bio import Align
 import pysam
 
 # TODO: generate_splice_structure()?
@@ -264,13 +262,14 @@ def random_contiguous_substring(string: str, length: int) -> str:
     start_idx = np.random.randint(0, len(string) - length + 1)
     return string[start_idx:start_idx + length]
 
-def generate_reads(exon_sequences: list[str], read_counts: list[int]) -> list[str]:
+def generate_reads(exon_sequences: list[str], read_counts: list[int], rev_probability: float = 0.0) -> list[str]:
     """
     Generate random reads from the exon sequences of genes.
 
     This function generates random subsequences (reads) from each of the provided exon sequences. 
-    The number of each reads generated for each exon sequence is defined by the corresponding entry 
+    The number of reads generated for each exon sequence is defined by the corresponding entry
     in the `read_counts` list. Each read is randomly is extracted from the respective exon sequence.
+    Each read comes from the reverse strand with probability `rev_probability`.
 
     Parameters:
     ----------
@@ -279,6 +278,8 @@ def generate_reads(exon_sequences: list[str], read_counts: list[int]) -> list[st
     read_counts : list of int
         A list of integers specifying how many reads to generate from each exon sequence. 
         The length of this list must match `exon_sequences`.
+    rev_probability: float
+        A probability defining the chance that a read comes from the reverse strand.
 
     Returns:
     -------
@@ -288,35 +289,43 @@ def generate_reads(exon_sequences: list[str], read_counts: list[int]) -> list[st
     Raises:
     ------
     ValueError
-        If the length of `exon_sequences` does not match `read_counts`, or if any `read_count`
-        exceeds the length of the corresponding exon sequence.
+        If the length of `exon_sequences` does not match `read_counts`, if any `read_count`
+        exceeds the length of the corresponding exon sequence, or if `rev_probability` is not
+        a valid probability.
 
     Examples:
     --------
     >>> generate_reads(["ATGCGCTGTCACTAT", "TTAACGTACCTAGCG"], [3, 2])
-    ['GCTGTCAC', 'CACTAT', 'ATCGCTGTCAC', 'CGTACCT', 'AACGTACCTAGCG']  # Example output, values will vary
+    ['GCTGTCAC', 'CTCGTG', 'ATCGCTGTCAC', 'CGTACCT', 'AACGTACCTAGCG']  # Example output, values will vary
 
     Notes:
     -----
     - Each read is a random contiguous substring of the corresponding exon sequence.
     - The read length is randomly chosen, but must not exceed the length of the exon sequence.
+    - A read coming from the reverse strand is the reverse complement of a random contiguous
+      substring of the corresponding exon sequence.
     """
 
     if len(exon_sequences) != len(read_counts):
         raise ValueError("The length of `exon_sequences` must match the length of `read_counts`.")
 
+    if any(count < 1 for count in read_counts):
+        raise ValueError("Each `read_count` must be greater than zero.")
+
+    if not (0.0 <= rev_probability <= 1.0):
+        raise ValueError("The probability of a reverse strand read must be between 0.0 and 1.0.")
+
     # Generate random reads
     reads = []
     for exon_seq, count in zip(exon_sequences, read_counts):
-
-        # Ensure valid read counts
-        if count < 1:
-            raise ValueError("Each `read_count` must be greater than zero.")
 
         # Generate the requested number of reads for this exon sequence
         for _ in range(count):
             read_len = np.random.randint(5, len(exon_seq) + 1)  # Random read length
             read = random_contiguous_substring(exon_seq, read_len)
+            # With probability `rev_probability`, this read comes from the reverse strand
+            if rev_probability > 0.0 and np.random.rand() < rev_probability:
+                read = str(Seq.reverse_complement(Seq(read)))
             reads.append(read)
 
     return reads
@@ -344,8 +353,8 @@ def partition_reads(reads: list[str], num_partitions: int) -> list[list[str]]:
     # Split the shuffled reads list into approximately equal sublists
     partitions = np.array_split(reads, num_partitions)
 
-    # Convert numpy arrays to lists and return
-    return [list(partition) for partition in partitions]
+    # Convert numpy arrays to lists and ensure Python `str` type for elements
+    return [[str(item) for item in partition] for partition in partitions]
 
 def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[list[str]],
                    windows: list[list[tuple[str, int, int]]]) -> None:
@@ -408,6 +417,7 @@ def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[
                 a.reference_start = bam_row[0]
                 a.mapping_quality = 255
                 a.cigar = bam_row[1]
+                a.is_reverse = bam_row[2]
                 outf.write(a)
 
     # Write BED files specifying genomic windows
@@ -416,7 +426,7 @@ def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[
         bed_df = pd.DataFrame(file_windows, columns=['chrom', 'start', 'end'])
         bed_df.to_csv(bed_path, sep='\t', index=False)
 
-def generate_bam_file_contents(reads: list[list[str]], genome: str) -> list[list[tuple[int, list[tuple[int, int]]]]]:
+def generate_bam_file_contents(reads: list[list[str]], genome: str) -> list[list[tuple[int, list[tuple[int, int]], bool]]]:
     """
     Generate BAM file contents by aligning reads to the reference genome.
 
@@ -425,50 +435,56 @@ def generate_bam_file_contents(reads: list[list[str]], genome: str) -> list[list
     - genome (str): Reference genome sequence.
 
     Returns:
-    - List of alignment information for each file's reads, containing tuples of start position and CIGAR operations.
+    - List of alignment information for each file's reads, containing tuples of start position, CIGAR operations,
+    and strandedness.
     """
     contents = []
 
+    # Initialize PairwiseAligner object
+    aligner = Align.PairwiseAligner()
+    aligner.mode = "local"
+    aligner.match_score = 5
+    aligner.mismatch_score = -4
+    aligner.open_gap_score = -2
+    aligner.extend_gap_score = -0.5
+
     # Perform local alignments for each query
     for file_reads in reads:
-
         file_contents = []
-
         for read in file_reads:
-            alignments = pairwise2.align.localms(genome, read, 2, -1, -0.5, -0.1)
+
+            # Try both positive and negative strand alignment
+            pos_alignments = aligner.align(genome, read, strand='+')
+            rev_alignments = aligner.align(genome, read, strand='-')
+            is_rev_alignment = rev_alignments.score > pos_alignments.score
+            alignments = rev_alignments if is_rev_alignment else pos_alignments
+
             # Arbitrarily choose an alignment for each read (these alignments all have the same score)
             alignment = alignments[np.random.randint(0, len(alignments))]
-            alignment_str = process_alignment_sequence(alignment)
-            alignment_cigar = run_length_encoding(alignment_str)
-            file_contents.append((alignment.start, alignment_cigar))
+            alignment_start, alignment_cigar = process_alignment(alignment)
+            file_contents.append((alignment_start, alignment_cigar, is_rev_alignment))
 
         contents.append(file_contents)
 
     return contents
 
-def process_alignment_sequence(alignment) -> str:
+def process_alignment(alignment: Align.Alignment) -> tuple[int, list[tuple[int, int]]]:
     """
-    Process alignment sequence by stripping unaligned nucleotides and converting 
-    to CIGAR-like symbols.
+    Convert an alignment object to a list of CIGAR tuples descriping the alignment.
 
     Parameters:
-    - alignment (pairwise2.Alignment): Pairwise alignment object.
-
-    Returns:
-    - str: Sequence with 'M' for matches and 'N' for gaps.
-    """
-    aligned_seq = alignment.seqB.strip('-')
-    return re.sub(r'[ATCG]', 'M', aligned_seq).replace('-', 'N')
-
-def run_length_encoding(data: str) -> list[tuple[int, int]]:
-    """
-    Encode a sequence using run-length encoding for CIGAR representation.
-
-    Parameters:
-    - data (str): Sequence of 'M' and 'N' symbols.
+    - alignment (Bio.Align.Alignment): Pairwise alignment object.
 
     Returns:
     - list[tuple[int, int]]: List of (CIGAR operation, run length).
     """
-    cigar_code_dict = {'M': 0, 'N': 3}
-    return [(cigar_code_dict[char], sum(1 for _ in group)) for char, group in groupby(data)]
+
+    alignment_start = alignment.aligned[0][0][0]
+
+    # TODO: an alternative which might be simpler - use alignment.aligned array to generate CIGAR tuples
+    aligned_arr = alignment.indices[1] # Retrieve the numpy array describing the read alignment
+    aligned_arr[aligned_arr >= 0] = 0
+    aligned_arr[aligned_arr == -1] = 3
+    aligned_str = ''.join(map(str, aligned_arr)).strip('3')
+
+    return alignment_start, [(int(char), sum(1 for _ in group)) for char, group in groupby(aligned_str)]
