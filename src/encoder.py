@@ -123,7 +123,6 @@ class Encoder:
             # TODO: handle case where BED window sequence not found in FASTA file
 
         self.onehot_sequence_matrices = onehot_sequences_matrices
-        print(onehot_sequences_matrices)
 
     def extract_transition_matrices(self):
         """
@@ -147,9 +146,7 @@ class Encoder:
             for bam_file in self.bam_files:  # TODO: stipulate that bam files are split by chromosome (for efficiency)?
                 # Iterate over reads within BED window (even partially) - TODO: use pysam pileup instead?
                 samfile = pysam.AlignmentFile(bam_file, "rb")
-                for read in samfile.fetch(
-                    window.chrom, window.start, window.end - 1
-                ):  # BED window end coordinate is not inclusive, samfile region is inclusive, TODO: will our BAM file have reads named by chromosome?
+                for read in samfile.fetch(window.chrom, window.start, window.end):  # TODO: will our BAM file have reads named by chromosome?
                     self.cigar_transition_features(
                         transition_matrix, window.start, window.end, read
                     )
