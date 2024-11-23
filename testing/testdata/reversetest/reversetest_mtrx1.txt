@@ -1,0 +1,35 @@
+bed_window: 225, 245
+
+
+Position:            225                 230                                     240             244
+Nucleotide:        | T   T   T   C   A   G   A   T   A   C   T   G   A   T   T   C   G   A   C   C  |
+Reads:             |                                                                                |
+                   |                            (no reads map to window)                            |
+                   |                                                                                |
+
+Transition Matrix (Positive Strand):
+
+                     225                 230                                     240             244
+                 A |                                                                                |
+                 B |                                                                                |
+                 C |                                                                                |
+                 D |                                                                                |
+                 E |                                                                                |
+                 F |                                                                                |
+
+
+Position:            225                 230                                     240             244
+Nucleotide:        | T   T   T   C   A   G   A   T   A   C   T   G   A   T   T   C   G   A   C   C  |
+Reads:             |                                                                                |
+                   |                            (no reads map to window)                            |
+                   |                                                                                |
+
+Transition Matrix (Reverse Strand):
+
+                     225                 230                                     240             244
+                 A |                                                                                |
+                 B |                                                                                |
+                 C |                                                                                |
+                 D |                                                                                |
+                 E |                                                                                |
+                 F |                                                                                |

@@ -1,0 +1,61 @@
+bed_window: 4, 44
+
+
+Position:            4                 10                            20                            30                            40       43
+Nucleotide:        | C  C  T  T  C  A  T  G  C  A  G  T  G  T  T  C  A  G  C  T  T  A  A  G  T  G  G  C  A  G  G  C  G  A  T  A  A  T  C  G  |
+Reads:             |                                                                                                                         |
+                   |    5                          14 15       18 19 20 21 22       25 26 27 28 29                                           |
+alignment0-read6   |    C  T  T  C  A  T  G  C  A  G  -  -  -  -  C  -  G  -  -  -  -  A  -  T                                               |
+                   |                                                                                                                         |
+                   |    5                       13 14                                                       33 34             39 40          |
+alignment0-read7   |    C  T  T  C  A  T  G  C  A  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G  C  G  A  T  A              |
+                   |                                                                                                                         |
+                   |                                        17       20 21                27 28 29 30       33 34 35                      43 |
+alignment2-read0   |                                        T  T  C  A  -  -  -  -  -  -  -  T  -  G  C  A  G  -  C  G  A  T  A  A  T  C  G  |
+                   |                                                                                                                         |
+                   |          7           11 12                                                                                              |
+alignment2-read4   |          T  C  A  T  G                                                                                                  |
+                   |                                                                                                                         |
+                   | 4                       12 13                                                                                           |
+alignment3-read3   | C  C  T  T  C  A  T  G  C                                                                                               |
+                   |                                                                                                                         |
+                   |                                                                         28 29 30 31 32 33 34                         43 |
+alignment3-read6   |                                                                         T  G  -  C  A  -  G  C  G  A  T  A  A  T  C  G  |
+                   |                                                                                                                         |
+
+Transition Matrix (Positive Strand):
+
+                     4  5     7        10 11 12 13 14 15    17 18 19 20 21 22       25 26 27 28 29 30 31 32 33 34 35          39 40       43
+                 A | 1  2     1                             1                                1                                               |
+                 B |    1  3  3  4  4  4  4  3  2  1           1  1  1                          1     1  2  1     2  3  3  3  3  2  2  2  2  |
+                 C |                         1  1  0                                            1                                1           |
+                 D |                               1  1              1  1  1              1     1  1        1  1                             |
+                 E |                                              1     1              1     2     1  1        2  1                          |
+                 F |                                  1  2  2  2  1  1  1  2  3  3  3  2  2  1  1  1  1  1  1                                |
+
+
+Position:            4                 10                            20                            30                            40       43
+Nucleotide:        | C  C  T  T  C  A  T  G  C  A  G  T  G  T  T  C  A  G  C  T  T  A  A  G  T  G  G  C  A  G  G  C  G  A  T  A  A  T  C  G  |
+Reads:             |                                                                                                                         |
+                   |                                                                                  31    33 34                      42 43 |
+alignment0-read1   |                                                                                  G  T  -  C  G  C  T  A  T  T  A  G     |
+                   |                                                                                                                         |
+                   |                                                                                                    37          41 42    |
+alignment1-read1   |                                                                                                    T  A  T  T  A        |
+                   |                                                                                                                         |
+                   | 4                       12  13                                                                                          |
+alignment1-read7   | G  G  A  A  G  T  A  C  G                                                                                               |
+                   |                                                                                                                         |
+                   |                                        17       20 21 22 23 24             29 30       33 34 35                41 42    |
+alignment2-read5   |                                        A  A  G  T  -  -  A  -  -  -  -  -  -  C  G  T  C  -  G  C  T  A  T  T  A        |
+                   |                                                                                                                         |
+
+Transition Matrix (Reverse Strand):
+
+                     4                       12 13          17       20 21 22 23 24             29 30 31    33 34 35    37       40 41 42 43
+                 A | 1                                      1                                         1                 1                    |
+                 B |    1  1  1  1  1  1  1  1                 1  1  1                                1  2  1     1  2  2  3  3  3  3  1     |
+                 C |                            1                                                                                      2  1  |
+                 D |                                                    1        1                          1  1                             |
+                 E |                                                          1                    1           1  1                          |
+                 F |                                                       1        1  1  1  1  1                                            |
