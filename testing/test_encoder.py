@@ -17,7 +17,7 @@ class TestEncoder():
         bam_files = [os.path.join(data_path, 'sorted_alignment0.bam')]
 
         # TODO: is there a better way to encode the matrices?
-        transition_matrix_1 = np.array([
+        transition_matrix_0 = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 3, 3, 4, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 5, 5, 5, 5, 4, 4, 4, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 1],
@@ -32,7 +32,7 @@ class TestEncoder():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ])
 
-        transition_matrix_2 = np.array([
+        transition_matrix_1 = np.array([
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [3, 5, 5, 5, 3, 0, 0, 1, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
@@ -47,7 +47,7 @@ class TestEncoder():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ])
 
-        correct_transition_matrices = [transition_matrix_1, transition_matrix_2]
+        correct_transition_matrices = [transition_matrix_0, transition_matrix_1]
 
         encoder = Encoder(bed_files, fasta_file, bam_files)
         encoder.encode()
@@ -67,7 +67,7 @@ class TestEncoder():
         bam_files = ['sorted_alignment0.bam', 'sorted_alignment1.bam', 'sorted_alignment2.bam', 'sorted_alignment3.bam']
         bam_files = [os.path.join(data_path, bam_file) for bam_file in bam_files]
 
-        transition_matrix_1 = np.array([
+        transition_matrix_0 = np.array([
             [1, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 3, 3, 4, 4, 4, 4, 3, 2, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 2, 3, 3, 3, 3, 2, 2, 2, 2],
             [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
@@ -82,7 +82,7 @@ class TestEncoder():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ])
 
-        transition_matrix_2 = np.array([
+        transition_matrix_1 = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -97,8 +97,8 @@ class TestEncoder():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ])
 
-        transition_matrix_3 = np.array([
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        transition_matrix_2 = np.array([
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], # last entry in this row should be one, encoder outputs 0
             [3, 3, 3, 3, 3, 4, 4, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -112,7 +112,7 @@ class TestEncoder():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 1, 0, 0, 0, 0, 0, 0]
         ])
 
-        transition_matrix_4 = np.array([
+        transition_matrix_3 = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
             [2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1],
             [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -127,7 +127,7 @@ class TestEncoder():
             [0, 0, 0, 0, 4, 4, 4, 4, 4, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0]
         ])
 
-        correct_transition_matrices = [transition_matrix_1, transition_matrix_2, transition_matrix_3, transition_matrix_4]
+        correct_transition_matrices = [transition_matrix_0, transition_matrix_1, transition_matrix_2, transition_matrix_3]
 
         encoder = Encoder(bed_files, fasta_file, bam_files)
         encoder.encode()
