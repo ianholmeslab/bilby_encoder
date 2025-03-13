@@ -1,0 +1,35 @@
+bed_window: 65, 80
+
+
+forward reads:
+                     65             70             75          79
+           ref_seq | C  C  G  C  C  T  A  C  G  C  G  A  A  A  G  |
+                   |                                              |
+                   |           (no reads map to window)           |
+                   |                                              |
+
+transition matrix (positive strand):
+                     65             70             75          79
+                 A |                                              |
+                 B |                                              |
+                 C |                                              |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |
+
+
+reverse reads:
+                     65             70             75          79
+           ref_seq | C  C  G  C  C  T  A  C  G  C  G  A  A  A  G  |
+                   |                                              |
+                   |           (no reads map to window)           |
+                   |                                              |
+
+transition matrix (negative strand):
+                     65             70             75          79
+                 A |                                              |
+                 B |                                              |
+                 C |                                              |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |
