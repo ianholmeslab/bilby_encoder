@@ -1,33 +1,35 @@
 bed_window: 65, 80
 
-forward:
-      65      69    71    74            79
- G |  A C C G C   C T A C G     C G A A A      5'   ref_seq
- G |                                                
- G |             (No read alignments in this bed window)      
- G |             
 
-reverse complement ref seq:
- C |  T G G C G    G A T G C    G C T T T      3'   ref_seq
- C |                                                  
- C |              (No read alignment)                                    
- C |                                                  
- C |                                                  
- C |  
+forward reads:
+                     65             70             75          79
+           ref_seq | C  C  G  C  C  T  A  C  G  C  G  A  A  A  G  |
+                   |                                              |
+                   |           (no reads map to window)           |
+                   |                                              |
 
-Transition matrix:
+transition matrix (positive strand):
+                     65             70             75          79
+                 A |                                              |
+                 B |                                              |
+                 C |                                              |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |
 
-forward:
-A    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-B    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-C    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-D    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-E    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-F    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0]
-reverse:
-A    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-B    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-C    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-D    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-E    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-F    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0]
+
+reverse reads:
+                     65             70             75          79
+           ref_seq | C  C  G  C  C  T  A  C  G  C  G  A  A  A  G  |
+                   |                                              |
+                   |           (no reads map to window)           |
+                   |                                              |
+
+transition matrix (negative strand):
+                     65             70             75          79
+                 A |                                              |
+                 B |                                              |
+                 C |                                              |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |

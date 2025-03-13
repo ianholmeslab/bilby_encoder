@@ -1,34 +1,43 @@
 bed_window: 43, 58
 
-forward:
-      43      47    49    52    53      57
- G |  A C A A C   C A A C C     C C C G T      5'   ref_seq
- G |  A C A A C   C A A C C     C C C G T           read5, alignment0
- G |    S A A C   C A E                             read4, alignment0
- G |              S A A C C     C C C G E           read8, alignment0
 
-reverse complement ref seq:
- C |  T G T T G   G T T G G     G G G C A      3'   ref_seq
- C |                                                  
- C |              (No read alignment)                                    
- C |                                                  
- C |                                                  
- C |                                                  
+forward reads:
+                     43    45             50             55    57
+           ref_seq | C  A  A  C  C  A  A  C  C  C  C  C  G  T  T  |
+                   |                                              |
+ alignment0, read4 |    A  A  C  C  A                             |
+                   |                                              |
+                   |                                              |
+ alignment0, read5 | C  A  A  C  C  A  A  C  C  C  C  C  G  T     |
+              A... |                                              |
+                   |                                              |
+ alignment0, read8 |                A  A  C  C  C  C  C  G        |
+                   |                                              |
+
+transition matrix (positive strand):
+                     43 44 45 46 47 48 49 50 51 52 53 54 55 56 57
+                 A |    1           1                             |
+                 B | 1  1  2  2  2  2  2  2  2  2  2  2  2  1     |
+                 C |                   1                    1  1  |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |
 
 
-Transition matrix:
+reverse reads:
+                     43    45             50             55    57
+           ref_seq | C  A  A  C  C  A  A  C  C  C  C  C  G  T  T  |
+                   |                                              |
+ alignment0, read3 |                                           A  | ...GATC
+                   |                                              |
+ alignment0, read6 |          G  G  T  T  G  G  G  G  G  C  A  A  |
+                   |                                              |
 
-forward:
-A    [1,0,1,0,0,  0,1,0,0,0,  0,0,0,0,0],
-B    [0,1,1,2,2,  2,2,2,2,2,  2,2,2,2,1],
-C    [0,0,0,0,0,  0,0,1,0,0,  0,0,0,0,1],
-D    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-E    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-F    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-reverse:
-A    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-B    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-C    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-D    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-E    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0],
-F    [0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0]
+transition matrix (negative strand):
+                     43    45 46 47 48 49 50 51 52 53 54 55 56 57
+                 A |          1                                1  |
+                 B |             1  1  1  1  1  1  1  1  1  1  1  |
+                 C |                                              |
+                 D |                                              |
+                 E |                                              |
+                 F |                                              |

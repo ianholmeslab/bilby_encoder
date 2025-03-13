@@ -1,5 +1,6 @@
 @HD	VN:1.0	SO:unsorted
 @SQ	SN:chr1	LN:100
+@PG	ID:samtools	PN:samtools	VN:1.21	CL:samtools view -h -o alignment0.sam alignment0.bam
 read0	0	chr1	92	255	5M	*	0	0	GGGTA	*
 read1	16	chr1	91	255	8M	*	0	0	AATACCCG	*
 read2	16	chr1	93	255	6M	*	0	0	AATACC	*
