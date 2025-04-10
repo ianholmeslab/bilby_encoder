@@ -351,7 +351,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="One-hot encode genomic sequences and RNA-seq reads.")
 
-    parser.add_argument("-b", "--bed", nargs="+", required=True, help="Path to one or more BED files")
+    parser.add_argument("-b", "--bed", required=True, help="Path to one or more BED files")
     parser.add_argument("-f", "--fasta", required=True, help="Path to FASTA file containing genomic sequences")
     parser.add_argument("-a", "--bam", nargs="+", required=True, help="Path to one or more BAM files")
 
@@ -364,7 +364,7 @@ def main():
     args = parser.parse_args()
 
     # Create Encoder instance and run encoding process
-    encoder = Encoder(bed_files=args.bed, fasta_file=args.fasta, bam_files=args.bam, output_dir=args.output, 
+    encoder = Encoder(bed_file=args.bed, fasta_file=args.fasta, bam_files=args.bam, output_dir=args.output,
                       in_memory=args.in_memory, aggregate_bams=args.aggregate_bams)
     encoder.encode()
 
