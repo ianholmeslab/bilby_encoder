@@ -67,6 +67,7 @@ class TestEncoder():
         correct_onehot_sequence_matrices = [sequence_matrix_0, sequence_matrix_1]
         correct_transition_matrices = [transition_matrix_0, transition_matrix_1]
 
+        # Test matrices in in_memory mode
         encoder = Encoder(bed_file, fasta_file, bam_files, in_memory=True, aggregate_bams=True)
         encoder.encode()
 
@@ -74,6 +75,21 @@ class TestEncoder():
             assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
 
         for i, matrix in enumerate(encoder.transition_matrices):
+            assert np.array_equal(matrix, correct_transition_matrices[i])
+
+        # Test matrices in default mode: writing and loading matrices from disk
+        output_path = os.path.join(data_path, 'out/')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        encoder = Encoder(bed_file, fasta_file, bam_files, output_dir=output_path, aggregate_bams=True)
+        encoder.encode()
+
+        for i, matrix_path in enumerate(encoder.onehot_sequence_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
+            assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
+
+        for i, matrix_path in enumerate(encoder.transition_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
             assert np.array_equal(matrix, correct_transition_matrices[i])
 
     def test_reversetest(self):
@@ -183,6 +199,7 @@ class TestEncoder():
         correct_onehot_sequence_matrices = [sequence_matrix_0, sequence_matrix_1, sequence_matrix_2, sequence_matrix_3]
         correct_transition_matrices = [transition_matrix_0, transition_matrix_1, transition_matrix_2, transition_matrix_3]
 
+        # Test matrices in in_memory mode
         encoder = Encoder(bed_file, fasta_file, bam_files, in_memory=True, aggregate_bams=True)
         encoder.encode()
 
@@ -190,6 +207,21 @@ class TestEncoder():
             assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
 
         for i, matrix in enumerate(encoder.transition_matrices):
+            assert np.array_equal(matrix, correct_transition_matrices[i])
+
+        # Test matrices in default mode: writing and loading matrices from disk
+        output_path = os.path.join(data_path, 'out/')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        encoder = Encoder(bed_file, fasta_file, bam_files, output_dir=output_path, aggregate_bams=True)
+        encoder.encode()
+
+        for i, matrix_path in enumerate(encoder.onehot_sequence_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
+            assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
+
+        for i, matrix_path in enumerate(encoder.transition_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
             assert np.array_equal(matrix, correct_transition_matrices[i])
 
     def test_allexontest(self):
@@ -254,8 +286,24 @@ class TestEncoder():
         encoder = Encoder(bed_file, fasta_file, bam_files, in_memory=True, aggregate_bams=True)
         encoder.encode()
 
+        # Test matrices in in_memory mode
         for i, matrix in enumerate(encoder.onehot_sequence_matrices):
             assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
 
         for i, matrix in enumerate(encoder.transition_matrices):
+            assert np.array_equal(matrix, correct_transition_matrices[i])
+
+        # Test matrices in default mode: writing and loading matrices from disk
+        output_path = os.path.join(data_path, 'out/')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        encoder = Encoder(bed_file, fasta_file, bam_files, output_dir=output_path, aggregate_bams=True)
+        encoder.encode()
+
+        for i, matrix_path in enumerate(encoder.onehot_sequence_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
+            assert np.array_equal(matrix, correct_onehot_sequence_matrices[i])
+
+        for i, matrix_path in enumerate(encoder.transition_matrices):
+            matrix = np.load(os.path.join(output_path, matrix_path))
             assert np.array_equal(matrix, correct_transition_matrices[i])
