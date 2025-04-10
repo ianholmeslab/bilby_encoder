@@ -19,18 +19,21 @@ import pysam
 
 class Encoder:
     """
-    A class to generate one-hot encodings of nucleotide sequences and
-    transition state matrices of RNA-seq data based on reads within specified
-    BED windows.
+    A class to generate one-hot encodings of nucleotide sequences and transition state matrices
+    of RNA-seq data based on reads within specified BED windows.
 
     Attributes:
     -----------
-    bed_files : list of str
-        Paths to BED files specifying genomic regions.
+    bed_file : str
+        Path to the BED file specifying genomic regions.
     fasta_file : str
         Path to the FASTA file containing genomic sequences.
     bam_files : list of str
         Paths to BAM files containing RNA-seq read alignments.
+    in_memory : Bool
+        Boolean describing whether to save output matrices in memory.
+    aggregate_bams : Bool
+        Boolean describing whether to save aggregate matrices across BAM files.
     bed_windows : pd.DataFrame
         DataFrame holding parsed BED window information.
     onehot_sequence_matrices : list of np.ndarray
@@ -51,119 +54,137 @@ class Encoder:
     ]
     transition_dict = {transition: i for i, transition in enumerate(transition_states)}
 
-    def __init__(self, bed_files: list[str], fasta_file: str, bam_files: list[str], output_dir: str = '.'):
-        self.bed_files = bed_files
+    nucleotides = ["A", "C", "G", "T", "N"]
+
+    def __init__(self, bed_file: str, fasta_file: str, bam_files: list[str], output_dir: str = ".",
+                 in_memory: bool = False, aggregate_bams: bool = False):
+        self.bed_file = bed_file
         self.fasta_file = fasta_file
         self.bam_files = bam_files
         self.output_dir = output_dir
+
+        self.in_memory = in_memory
+        self.aggregate_bams = aggregate_bams
 
         self.bed_windows = None
         self.onehot_sequence_matrices = None
         self.transition_matrices = None
 
+    # TODO: write some sanity check functions to ensure correct bed/fasta/bam formatting
+    # Things to check: bed file formatting (columns, dtypes, etc.), fasta file chromosome names
+    # match bam files chromosome names, bed coords greater than zero, etc.
+    # also check uniqueness of BED windows
+
     def extract_bed_windows(self):
         """
-        Parses BED files and loads window coordinates into a DataFrame.
+        Parses BED file and loads window coordinates into a DataFrame.
 
         Sets:
         -----
         self.bed_windows : pd.DataFrame
-            Contains columns: 'chrom', 'start', 'end' for each BED region.
+            Contains columns: "Chromosome", "Start", "End" for each BED region.
         """
 
-        # Parse BED files to generate list of BED windows
-        bed_data = []
-        for bed_file in self.bed_files:
-            gr = pr.read_bed(bed_file)
-            for window in gr.df.itertuples():
-                # TODO: include interval.name?, handle repeat windows?
-                data = (window.Chromosome, window.Start, window.End)
-                bed_data.append(data)
+        self.bed_windows = pr.read_bed(self.bed_file, as_df=True)
 
-        # Create DataFrame of BED windows - TODO: switch this to a list of bedparse Interval objects?
-        self.bed_windows = pd.DataFrame(bed_data, columns=["chrom", "start", "end"])
+        # Sort BED windows by chromosome, coordinates (makes subsequent window extraction more efficient)
+        chrom_order = {f"chr{i}": i for i in range(1, 23)}
+        chrom_order.update({"chrX": 23, "chrY": 24, "chrM": 25}) # TODO: support non-human chromosome #s
+        self.bed_windows["chrom_sort"] = self.bed_windows["Chromosome"].map(chrom_order)
+        self.bed_windows = self.bed_windows.sort_values(by=["chrom_sort", "Start", "End"], ascending=True)
+        self.bed_windows = self.bed_windows.drop(columns="chrom_sort")
 
     def extract_sequence_onehot(self):
         """
-        Extracts nucleotide sequences from FASTA file for each BED window and
-        generates one-hot encodings.
+        Extracts nucleotide sequences for each BED window from a FASTA file and generates one-hot encoded representations.
 
-        Sets:
-        -----
-        self.onehot_sequence_matrices : list of np.ndarray
-            One-hot encoded matrices for each BED window's sequence.
+        Sets
+        ----
+        self.onehot_sequence_matrices : list of np.ndarray or list of str
+            - If self.in_memory is True: stores one-hot encoded matrices for each BED window.
+            - If self.in_memory is False: stores file paths to the saved one-hot encoded matrices.
         """
 
-        onehot_sequences_matrices = []  # TODO: convert to numpy array?
-        categories = [["A", "T", "C", "G"]]
-        encoder = OneHotEncoder(
-            handle_unknown="ignore", categories=categories, sparse_output=False
-        )
+        onehot_sequence_matrices = []
+        encoder = OneHotEncoder(categories=[self.nucleotides], dtype=np.uint8, handle_unknown="ignore", sparse_output=False)
 
-        # Parse FASTA file - TODO: to_dict() is non-memory friendly - find alternate solution?
-        fasta_sequences = SeqIO.to_dict(SeqIO.parse(self.fasta_file, "fasta"))
+        for record in SeqIO.parse(self.fasta_file, "fasta"): # TODO: add a check that all the chromosomes are in this file
+            chrom = record.id
 
-        # Iterate over DataFrame of BED windows
-        for bed_window in self.bed_windows.itertuples():
-            # Retrieve nucleotide sequence defined by BED coordinates
-            if (
-                bed_window.chrom in fasta_sequences
-            ):  # TODO: will our FASTA file have sequences named by chromosome?
-                nucleotide_sequence = np.array(
-                    fasta_sequences[bed_window.chrom].seq[
-                        bed_window.start : bed_window.end
-                    ]
-                )  # TODO: do we care about strandedness of BED windows?
+            # Filter DataFrame for windows on current chromosome
+            chrom_windows = self.bed_windows[self.bed_windows["Chromosome"] == chrom]
 
-                # One-Hot encode nucleotide sequence
-                nucleotide_sequence = nucleotide_sequence.reshape((-1, 1))
-                onehot_sequence_matrix = encoder.fit_transform(nucleotide_sequence)
-                onehot_sequences_matrices.append(onehot_sequence_matrix)
+            for window in chrom_windows.itertuples():
+                start, end = window.Start, window.End
+                seq = record.seq[start:end].upper() # TODO: handle case where BED window sequence not found in FASTA file
 
-            # TODO: handle case where BED window sequence not found in FASTA file
+                # One-hot encode the sequence
+                seq_array = np.array(list(seq)).reshape(-1, 1)
+                onehot_matrix = encoder.fit_transform(seq_array)
 
-        self.onehot_sequence_matrices = onehot_sequences_matrices
+                if self.in_memory:
+                    onehot_sequence_matrices.append(onehot_matrix)
+                else:
+                    filename = f"sequence_OHE_{chrom}_{start}_{end}.npy"
+                    file_loc = os.path.join(self.output_dir, filename)
+                    np.save(file_loc, onehot_matrix)
+                    onehot_sequence_matrices.append(filename)
+
+        self.onehot_sequence_matrices = onehot_sequence_matrices
 
     def extract_transition_matrices(self):
         """
-        Constructs transition matrices based on read alignments in BAM files
-        for each BED window.
+        Constructs transition matrices based on read alignments in BAM files for each BED window.
 
         Sets:
         -----
-        self.transition_matrices : list of np.ndarray
-            Transition matrices capturing state changes for reads per BED window.
+        self.transition_matrices : list of np.ndarray or list of str
+            - If self.in_memory is True: stores transition matrices capturing state changes for reads per BED window.
+            - If self.in_memory is False: stores file paths to the saved transition matrices.
         """
 
-        transition_matrices = []  # TODO: convert to numpy array?
+        transition_matrices = []
 
-        # Iterate over DataFrame of BED windows
+        # TODO: parallelize this!
         for window in self.bed_windows.itertuples():
-            matrix_shape = (12, window.end - window.start)
-            transition_matrix = np.zeros(matrix_shape, dtype=int)
 
-            # Iterate over BAM files
-            for bam_file in self.bam_files:  # TODO: stipulate that bam files are split by chromosome (for efficiency)?
-                # Iterate over reads within BED window (even partially) - TODO: use pysam pileup instead?
-                samfile = pysam.AlignmentFile(bam_file, "rb")
-                for read in samfile.fetch(window.chrom, window.start, window.end):  # TODO: will our BAM file have reads named by chromosome?
-                    self.cigar_transition_features(
-                        transition_matrix, window.start, window.end, read
-                    )
+            chrom, start, end = window.Chromosome, window.Start, window.End
+            matrix_shape = (12, end - start)
 
-            transition_matrices.append(transition_matrix)
+            if self.aggregate_bams:
+                transition_matrix = np.zeros(matrix_shape, dtype=np.uint16)
+                for bam_file in self.bam_files:
+                    samfile = pysam.AlignmentFile(bam_file, "rb") # TODO: use pysam pileup instead?
+                    for read in samfile.fetch(chrom, start, end):
+                        self.cigar_transition_features(transition_matrix, start, end, read)
 
-        # TODO: save these to disk instead
+                if self.in_memory:
+                    transition_matrices.append(transition_matrix)
+                else:
+                    filename = f"transitions_{chrom}_{start}_{end}.npy"
+                    file_loc = os.path.join(self.output_dir, filename)
+                    np.save(file_loc, transition_matrix)
+                    transition_matrices.append(filename)
+
+            else: 
+                for bam_file in self.bam_files:
+                    transition_matrix = np.zeros(matrix_shape, dtype=np.uint16)
+                    samfile = pysam.AlignmentFile(bam_file, "rb")
+                    for read in samfile.fetch(chrom, start, end):
+                        self.cigar_transition_features(transition_matrix, start, end, read)
+                    
+                    if self.in_memory:
+                        transition_matrices.append(transition_matrix)
+                    else:
+                        filename = f"transitions_{chrom}_{start}_{end}.npy"
+                        file_loc = os.path.join(self.output_dir, filename)
+                        np.save(file_loc, transition_matrix)
+                        transition_matrices.append(filename)
+
         self.transition_matrices = transition_matrices
 
     # TODO: better name for this function
-    def cigar_transition_features(
-        self,
-        transition_matrix: np.array,
-        window_start: int,
-        window_end: int,
-        read: pysam.AlignedRead,
-    ):
+    def cigar_transition_features(self, transition_matrix: np.array, window_start: int, window_end: int, read: pysam.AlignedRead):
         """
         Updates transition matrix with CIGAR-based state changes for a given read.
 
@@ -201,32 +222,24 @@ class Encoder:
         features_added = 0
         for cigar_tuple in cigar_tuples:
             # TODO: improve this code somewhat
-            if not isinstance(
-                cigar_tuple[1], int
-            ):  # if non-self-loop transition (no repetition)
+            if not isinstance(cigar_tuple[1], int): # if non-self-loop transition (new CIGAR state)
                 transition_feat = self.transition_dict[(cigar_tuple[0], cigar_tuple[1])]
                 if window_start + read_offset + features_added < window_end:
-                    transition_matrix[transition_feat + reverse_offset][
-                        read_offset + features_added
-                    ] += 1
+                    transition_matrix[transition_feat + reverse_offset][read_offset + features_added] += 1
                 else:
                     return
                 features_added += 1
 
-            else:  # self-loop condition (repetition)
+            else: # self-loop transition (repetition of CIGAR state)
                 transition_feat = self.transition_dict[(cigar_tuple[0], cigar_tuple[0])]
                 for _ in range(cigar_tuple[1]):
                     if window_start + read_offset + features_added < window_end:
-                        transition_matrix[transition_feat + reverse_offset][
-                            read_offset + features_added
-                        ] += 1
+                        transition_matrix[transition_feat + reverse_offset][read_offset + features_added] += 1
                     else:
                         return
                     features_added += 1
 
-    def trim_cigar_tuples(
-        self, cigar_tuples: list[tuple[str, str | int]], read_offset: int
-    ) -> tuple[list[tuple[str, str | int]], int]:
+    def trim_cigar_tuples(self, cigar_tuples: list[tuple[str, str | int]], read_offset: int) -> tuple[list[tuple[str, str | int]], int]:
         """
         Adjusts CIGAR tuples if the read starts before the BED window.
 
@@ -247,12 +260,10 @@ class Encoder:
 
         # TODO: improve this code somewhat
         # "Fast-forward" the CIGAR tuple encoding of reads that begin before the BED window
-        i = 0  # keep track of count of processed tuples, to be sliced out later
+        i = 0  # Keep track of count of processed tuples, to be sliced out later
         while read_offset < 0:
             repetition = cigar_tuples[i][1]
-            if not isinstance(
-                repetition, int
-            ):  # if non-self-loop transition (no repetition)
+            if not isinstance(repetition, int): # if non-self-loop transition (new CIGAR state)
                 read_offset += 1
                 i += 1
                 continue
@@ -278,13 +289,9 @@ class Encoder:
 
         os.makedirs(self.output_dir, exist_ok=True)
 
-        for i, (seq_matrix, trans_matrix) in enumerate(
-            zip(self.onehot_sequence_matrices, self.transition_matrices)
-        ):
+        for i, (seq_matrix, trans_matrix) in enumerate(zip(self.onehot_sequence_matrices, self.transition_matrices)):
             # Save one-hot sequence matrix
-            seq_filename = os.path.join(
-                self.output_dir, f"onehot_sequence_matrix_{i}.npy"
-            )
+            seq_filename = os.path.join(self.output_dir, f"onehot_sequence_matrix_{i}.npy")
             np.save(seq_filename, seq_matrix)
 
             # Save transition matrix
@@ -297,7 +304,7 @@ class Encoder:
 
     def save_matrix_as_bedgraph(self):
         """
-        Save one-hot sequence and transition matrices to files in the output directory in text form
+        Save one-hot sequence and transition matrices to files in the output directory in text form.
         """
         import os
 
@@ -341,51 +348,24 @@ class Encoder:
 
 def main():
     """Parse command-line arguments and run encoding process."""
-    parser = argparse.ArgumentParser(
-        description="One-hot encode genomic sequences and RNA-seq reads."
-    )
+    
+    parser = argparse.ArgumentParser(description="One-hot encode genomic sequences and RNA-seq reads.")
 
-    parser.add_argument(
-        "-b", "--bed", nargs="+", required=True, help="Path to one or more BED files"
-    )
+    parser.add_argument("-b", "--bed", nargs="+", required=True, help="Path to one or more BED files")
+    parser.add_argument("-f", "--fasta", required=True, help="Path to FASTA file containing genomic sequences")
+    parser.add_argument("-a", "--bam", nargs="+", required=True, help="Path to one or more BAM files")
 
-    parser.add_argument(
-        "-f",
-        "--fasta",
-        required=True,
-        help="Path to FASTA file containing genomic sequences",
-    )
+    parser.add_argument("--in_memory", action=argparse.BooleanOptionalAction, help="Save OHE sequence and transition matrices in memory")
+    parser.add_argument("--aggregate_bams", action=argparse.BooleanOptionalAction, help="Aggregate transition matrices across BAM files")
 
-    parser.add_argument(
-        "-a", "--bam", nargs="+", required=True, help="Path to one or more BAM files"
-    )
+    parser.add_argument("-o", "--output", default=".", help="Output directory for saving matrices (default: current directory)")
+    parser.add_argument("-p", "--print", action="store_true", help="Print matrices to console in addition to saving")
 
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=".",
-        help="Output directory for saving matrices (default: current directory)",
-    )
-
-    parser.add_argument(
-        "-p",
-        "--print",
-        action="store_true",
-        help="Print matrices to console in addition to saving",
-    )
-
-    # Parse arguments
     args = parser.parse_args()
 
-    # Create Encoder instance
-    encoder = Encoder(
-        bed_files=args.bed,
-        fasta_file=args.fasta,
-        bam_files=args.bam,
-        output_dir=args.output,
-    )
-
-    # Run encoding process
+    # Create Encoder instance and run encoding process
+    encoder = Encoder(bed_files=args.bed, fasta_file=args.fasta, bam_files=args.bam, output_dir=args.output, 
+                      in_memory=args.in_memory, aggregate_bams=args.aggregate_bams)
     encoder.encode()
 
     # Save matrices
@@ -394,9 +374,7 @@ def main():
 
     # Optionally print matrices to console
     if args.print:
-        for i, matrices in enumerate(
-            zip(encoder.onehot_sequence_matrices, encoder.transition_matrices)
-        ):
+        for i, matrices in enumerate(zip(encoder.onehot_sequence_matrices, encoder.transition_matrices)):
             print(f"\nOne-Hot Sequence Matrix {i}:\n{matrices[0]}\n")
             print(f"\nTransition Matrix {i}:\n{matrices[1]}\n")
 

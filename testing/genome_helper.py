@@ -357,7 +357,7 @@ def partition_reads(reads: list[str], num_partitions: int) -> list[list[str]]:
     return [[str(item) for item in partition] for partition in partitions]
 
 def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[list[str]],
-                   windows: list[list[tuple[str, int, int]]]) -> None:
+                   windows: list[tuple[str, int, int]]) -> None:
     """
     Save test case data including genome, reads, and windows in FASTA, BAM, and BED formats.
 
@@ -367,8 +367,8 @@ def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[
     - genome (str): Reference genome sequence to save as a FASTA file.
     - reads (list[list[str]]): Nested list of read sequences; each inner list represents 
       reads for a specific file.
-    - windows (list[list[tuple[str, int, int]]]): Nested list of genomic intervals 
-      as (chrom, start, end) tuples for each file.
+    - windows (list[tuple[str, int, int]]): List of genomic intervals
+      as (chrom, start, end) tuples.
 
     The function generates:
     - genome.fasta: Reference genome in FASTA format.
@@ -420,11 +420,10 @@ def save_test_case(data_dir: str, test_case_name: str, genome: str, reads: list[
                 a.is_reverse = bam_row[2]
                 outf.write(a)
 
-    # Write BED files specifying genomic windows
-    for i, file_windows in enumerate(windows):
-        bed_path = os.path.join(testcase_directory, f"windows{i}.bed")
-        bed_df = pd.DataFrame(file_windows, columns=['chrom', 'start', 'end'])
-        bed_df.to_csv(bed_path, sep='\t', index=False)
+    # Write BED file specifying genomic windows
+    bed_path = os.path.join(testcase_directory, "windows.bed")
+    bed_df = pd.DataFrame(data=windows, columns=['Chromosome', 'Start', 'End'])
+    bed_df.to_csv(bed_path, sep='\t', index=False)
 
 def generate_bam_file_contents(reads: list[list[str]], genome: str) -> list[list[tuple[int, list[tuple[int, int]], bool]]]:
     """
