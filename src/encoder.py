@@ -369,8 +369,9 @@ def main():
     encoder.encode()
 
     # Save matrices
-    encoder.save_matrices()
-    encoder.save_matrix_as_bedgraph()
+    if args.in_memory:
+        encoder.save_matrices()
+        encoder.save_matrix_as_bedgraph()
 
     # Optionally print matrices to console
     if args.print:
