@@ -120,7 +120,7 @@ class Encoder:
 
                 # One-hot encode the sequence
                 seq_array = np.array(list(seq)).reshape(-1, 1)
-                onehot_matrix = encoder.fit_transform(seq_array)
+                onehot_matrix = encoder.fit_transform(seq_array).T
 
                 if self.in_memory:
                     onehot_sequence_matrices.append(onehot_matrix)
